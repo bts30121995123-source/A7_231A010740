@@ -1,6 +1,8 @@
 
 package vn.edu.vhu.ltdd.a7permission;
 
+import android.app.PendingIntent;
+import android.content.Intent;
 import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -285,28 +287,52 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void guiThongBao() {
-        NotificationCompat.Builder b =
-                new NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setSmallIcon(
-                                android.R.drawable.ic_dialog_info)
-                        .setContentTitle(
-                                getString(R.string.noti_title))
-                        .setContentText(
-                                getString(R.string.noti_text))
-                        .setPriority(
-                                NotificationCompat.PRIORITY_DEFAULT)
-                        .setAutoCancel(true);
 
-        try {
-            NotificationManagerCompat.from(this)
-                    .notify(NOTI_ID, b.build());
-        } catch (SecurityException e) {
-            Log.w(TAG,
-                    "Thiếu quyền gửi thông báo", e);
+        private void guiThongBao() {
+
+            // NC3: Tao Intent de mo lai MainActivity
+            Intent intent = new Intent(this, MainActivity.class);
+
+            intent.setFlags(
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP |
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+            );
+
+            // NC3: Tao PendingIntent khi nguoi dung bam thong bao
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT |
+                            PendingIntent.FLAG_IMMUTABLE
+            );
+
+            // Tao thong bao
+            NotificationCompat.Builder b =
+                    new NotificationCompat.Builder(this, CHANNEL_ID)
+                            .setSmallIcon(
+                                    android.R.drawable.ic_dialog_info)
+                            .setContentTitle(
+                                    getString(R.string.noti_title))
+                            .setContentText(
+                                    getString(R.string.noti_text))
+                            .setPriority(
+                                    NotificationCompat.PRIORITY_DEFAULT)
+                            .setContentIntent(pendingIntent)
+                            .setAutoCancel(true);
+
+            try {
+                NotificationManagerCompat.from(this)
+                        .notify(NOTI_ID, b.build());
+
+                Log.d(TAG, "NC3: Da gui thong bao");
+
+            } catch (SecurityException e) {
+                Log.w(TAG, "Thieu quyen gui thong bao", e);
+            }
         }
-    }
 
-    // HIEN THI TRANG THAI
+        // HIEN THI TRANG THAI
 
     private void capNhatTrangThai() {
         boolean camera = ContextCompat.checkSelfPermission(
