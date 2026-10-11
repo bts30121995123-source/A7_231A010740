@@ -1,3 +1,4 @@
+
 package vn.edu.vhu.ltdd.a7permission;
 
 import android.Manifest;
@@ -28,6 +29,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "A7_231A010740";
@@ -37,12 +40,13 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imgAnh;
     private TextView tvTrangThai;
 
-    // 1) Bộ xin quyền CAMERA
+    // Xin quyen CAMERA
     private final ActivityResultLauncher<String> xinQuyenCamera =
             registerForActivityResult(
                     new ActivityResultContracts.RequestPermission(),
                     duocCap -> {
-                        Log.d(TAG, "Kết quả xin quyền CAMERA: " + duocCap);
+                        Log.d(TAG, "Kết quả CAMERA: " + duocCap);
+
                         if (duocCap) {
                             moCamera();
                         } else if (shouldShowRequestPermissionRationale(
@@ -53,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
 
-    // 2) Bộ xin quyền POST_NOTIFICATIONS
+    // Xin quyen thong bao
     private final ActivityResultLauncher<String> xinQuyenThongBao =
             registerForActivityResult(
                     new ActivityResultContracts.RequestPermission(),
@@ -61,18 +65,55 @@ public class MainActivity extends AppCompatActivity {
                         if (duocCap) {
                             guiThongBao();
                         } else {
-                            Toast.makeText(this, R.string.noti_denied,
+                            Toast.makeText(this,
+                                    R.string.noti_denied,
                                     Toast.LENGTH_SHORT).show();
                         }
                     });
 
-    // 3) Bộ mở Camera lấy ảnh xem trước
+    // NC1: Xin hai quyen cung luc
+    private final ActivityResultLauncher<String[]> xinHaiQuyen =
+            registerForActivityResult(
+                    new ActivityResultContracts.RequestMultiplePermissions(),
+                    (Map<String, Boolean> ketQua) -> {
+
+                        boolean camera = Boolean.TRUE.equals(
+                                ketQua.get(Manifest.permission.CAMERA));
+
+                        boolean thongBao;
+
+                        if (Build.VERSION.SDK_INT >=
+                                Build.VERSION_CODES.TIRAMISU) {
+                            thongBao = Boolean.TRUE.equals(
+                                    ketQua.get(
+                                            Manifest.permission.POST_NOTIFICATIONS));
+                        } else {
+                            thongBao = true;
+                        }
+
+                        Log.d(TAG, "NC1 - CAMERA: " + camera);
+                        Log.d(TAG, "NC1 - THONG BAO: " + thongBao);
+
+                        String thongDiep =
+                                "CAMERA: " +
+                                        (camera ? "ĐÃ CẤP" : "CHƯA CẤP") +
+                                        "\nTHÔNG BÁO: " +
+                                        (thongBao ? "ĐÃ CẤP" : "CHƯA CẤP");
+
+                        new AlertDialog.Builder(this)
+                                .setTitle("Kết quả NC1")
+                                .setMessage(thongDiep)
+                                .setPositiveButton("Đóng", null)
+                                .show();
+
+                        capNhatTrangThai();
+                    });
+
+    // Mo Camera lay anh xem truoc
     private final ActivityResultLauncher<Void> chupAnh =
             registerForActivityResult(
                     new ActivityResultContracts.TakePicturePreview(),
                     (Bitmap bitmap) -> {
-                        Log.d(TAG, "Ket qua chup anh: " +
-                                (bitmap == null ? "NULL" : "CO ANH"));
                         if (bitmap != null) {
                             imgAnh.setImageBitmap(bitmap);
                             tvTrangThai.setText(getString(
@@ -80,7 +121,8 @@ public class MainActivity extends AppCompatActivity {
                                     bitmap.getWidth(),
                                     bitmap.getHeight()));
                         } else {
-                            Toast.makeText(this, R.string.photo_cancelled,
+                            Toast.makeText(this,
+                                    R.string.photo_cancelled,
                                     Toast.LENGTH_SHORT).show();
                         }
                     });
@@ -92,10 +134,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         ViewCompat.setOnApplyWindowInsetsListener(
-                findViewById(R.id.main), (v, insets) -> {
+                findViewById(R.id.main),
+                (v, insets) -> {
                     Insets bars = insets.getInsets(
                             WindowInsetsCompat.Type.systemBars());
-                    v.setPadding(bars.left, bars.top,
+                    v.setPadding(
+                            bars.left, bars.top,
                             bars.right, bars.bottom);
                     return insets;
                 });
@@ -106,12 +150,23 @@ public class MainActivity extends AppCompatActivity {
         Button btnChupAnh = findViewById(R.id.btnChupAnh);
         Button btnThongBao = findViewById(R.id.btnThongBao);
         Button btnCaiDat = findViewById(R.id.btnCaiDat);
+        Button btnNC1 = findViewById(R.id.btnNC1);
 
         taoKenhThongBao();
 
-        btnChupAnh.setOnClickListener(v -> kiemTraRoiChup());
-        btnThongBao.setOnClickListener(v -> kiemTraRoiGuiThongBao());
-        btnCaiDat.setOnClickListener(v -> moCaiDatUngDung());
+        // Khoi phuc chuc nang chup anh binh thuong
+        btnChupAnh.setOnClickListener(
+                v -> kiemTraRoiChup());
+
+        btnThongBao.setOnClickListener(
+                v -> kiemTraRoiGuiThongBao());
+
+        btnCaiDat.setOnClickListener(
+                v -> moCaiDatUngDung());
+
+        // Nut NC1
+        btnNC1.setOnClickListener(
+                v -> kiemTraHaiQuyen());
     }
 
     @Override
@@ -120,7 +175,25 @@ public class MainActivity extends AppCompatActivity {
         capNhatTrangThai();
     }
 
-    // ================= LUỒNG XIN QUYỀN CAMERA =================
+    // NC1: Kiem tra va xin hai quyen
+    private void kiemTraHaiQuyen() {
+        if (Build.VERSION.SDK_INT >=
+                Build.VERSION_CODES.TIRAMISU) {
+
+            xinHaiQuyen.launch(new String[]{
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.POST_NOTIFICATIONS
+            });
+
+        } else {
+            // Android 12 tro xuong khong can xin POST_NOTIFICATIONS
+            xinHaiQuyen.launch(new String[]{
+                    Manifest.permission.CAMERA
+            });
+        }
+    }
+
+    // LUONG CAMERA
 
     private void kiemTraRoiChup() {
         int trangThai = ContextCompat.checkSelfPermission(
@@ -140,7 +213,8 @@ public class MainActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.rationale_title)
                 .setMessage(R.string.rationale_camera)
-                .setPositiveButton(R.string.agree,
+                .setPositiveButton(
+                        R.string.agree,
                         (d, w) -> xinQuyenCamera.launch(
                                 Manifest.permission.CAMERA))
                 .setNegativeButton(R.string.cancel, null)
@@ -151,7 +225,8 @@ public class MainActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.blocked_title)
                 .setMessage(R.string.blocked_camera)
-                .setPositiveButton(R.string.open_settings,
+                .setPositiveButton(
+                        R.string.open_settings,
                         (d, w) -> moCaiDatUngDung())
                 .setNegativeButton(R.string.cancel, null)
                 .show();
@@ -164,12 +239,14 @@ public class MainActivity extends AppCompatActivity {
     private void moCaiDatUngDung() {
         Intent i = new Intent(
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+
         i.setData(Uri.fromParts(
                 "package", getPackageName(), null));
+
         startActivity(i);
     }
 
-    // ================= LUỒNG THÔNG BÁO =================
+    // LUONG THONG BAO
 
     private void kiemTraRoiGuiThongBao() {
         if (Build.VERSION.SDK_INT <
@@ -179,7 +256,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (ContextCompat.checkSelfPermission(
-                this, Manifest.permission.POST_NOTIFICATIONS)
+                this,
+                Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED) {
             guiThongBao();
         } else {
@@ -189,11 +267,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void taoKenhThongBao() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel kenh = new NotificationChannel(
-                    CHANNEL_ID,
-                    getString(R.string.channel_name),
-                    NotificationManager.IMPORTANCE_DEFAULT);
+        if (Build.VERSION.SDK_INT >=
+                Build.VERSION_CODES.O) {
+
+            NotificationChannel kenh =
+                    new NotificationChannel(
+                            CHANNEL_ID,
+                            getString(R.string.channel_name),
+                            NotificationManager.IMPORTANCE_DEFAULT);
 
             kenh.setDescription(
                     getString(R.string.channel_desc));
@@ -220,11 +301,12 @@ public class MainActivity extends AppCompatActivity {
             NotificationManagerCompat.from(this)
                     .notify(NOTI_ID, b.build());
         } catch (SecurityException e) {
-            Log.w(TAG, "Thiếu quyền gửi thông báo", e);
+            Log.w(TAG,
+                    "Thiếu quyền gửi thông báo", e);
         }
     }
 
-    // ================= HIỂN THỊ TRẠNG THÁI =================
+    // HIEN THI TRANG THAI
 
     private void capNhatTrangThai() {
         boolean camera = ContextCompat.checkSelfPermission(
@@ -235,7 +317,8 @@ public class MainActivity extends AppCompatActivity {
                 Build.VERSION.SDK_INT <
                         Build.VERSION_CODES.TIRAMISU
                         || ContextCompat.checkSelfPermission(
-                        this, Manifest.permission.POST_NOTIFICATIONS)
+                        this,
+                        Manifest.permission.POST_NOTIFICATIONS)
                         == PackageManager.PERMISSION_GRANTED;
 
         String s = getString(
@@ -244,7 +327,8 @@ public class MainActivity extends AppCompatActivity {
                         : getString(R.string.denied),
                 thongBao ? getString(R.string.granted)
                         : getString(R.string.denied));
-            tvTrangThai.setText(s);
+
+        tvTrangThai.setText(s);
         Log.d(TAG, s.replace("\n", " | "));
     }
 }

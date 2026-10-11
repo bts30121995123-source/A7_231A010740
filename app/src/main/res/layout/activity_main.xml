@@ -18,7 +18,6 @@
         android:layout_height="wrap_content"
         android:text="@string/student" />
 
-    <!-- Khung xem trước ảnh vừa chụp -->
     <ImageView
         android:id="@+id/imgAnh"
         android:layout_width="match_parent"
@@ -54,11 +53,16 @@
 
     <Button
         android:id="@+id/btnCaiDat"
-        style="?attr/materialButtonOutlinedStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/open_settings" />
 
+    <Button
+        android:id="@+id/btnNC1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="NC1 - Xin 2 quyền cùng lúc" />
 
 </LinearLayout>
